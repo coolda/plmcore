@@ -1,0 +1,6 @@
+/* div_minus */
+
+nume=10; deno=2; ans=0; while(nume>=0){nume=nume-deno; ans=ans+1;} 
+
+
+

@@ -1,0 +1,2 @@
+/* logical and */
+a=5; b=6; ifz(a==5 && b==6) {c1=7;} write(c1);

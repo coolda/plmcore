@@ -1,0 +1,3 @@
+procedure p1 write(300);
+procedure p2 write("Hello");
+p1; p2;

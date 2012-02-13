@@ -1,0 +1,2 @@
+/* logical or */
+a=7; b=8; ifz (a==7 || b==7) c1=100; write(c1);

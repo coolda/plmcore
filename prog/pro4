@@ -1,0 +1,3 @@
+
+procedure pro4 { mya[2]=123; foo=mya[2]; write(foo); }
+pro4;

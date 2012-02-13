@@ -1,0 +1,4 @@
+mya[2]=123; foo=mya[2]; write(foo);
+
+
+

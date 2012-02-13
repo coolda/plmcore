@@ -1,0 +1,4 @@
+procedure pro { a=10; write(a);}pro;
+procedure pro2{c=100; d=200; ifz (c<d) write(c);}pro2;
+
+

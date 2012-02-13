@@ -1,0 +1,1 @@
+bar=256; foo=bar; write(foo);

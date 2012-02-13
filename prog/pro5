@@ -1,0 +1,4 @@
+/* pro5 */
+procedure pro5 { a=30; b=40; ifz (a<b) write(a); }
+pro5;
+ 

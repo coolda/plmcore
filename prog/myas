@@ -1,0 +1,1 @@
+mys[0]="hello"; mys[1]= "aloha"; mys[2]= "hola"; a=mys[1]; write(a);

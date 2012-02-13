@@ -1,0 +1,4 @@
+nume=6; deno=2; ans=0; 
+while(nume>0) { nume=nume-deno; ans=ans+1;}
+write("answer is:"); write(ans);
+

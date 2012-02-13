@@ -1,0 +1,2 @@
+/* imm_hello */
+write("Hello, world!");
