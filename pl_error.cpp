@@ -1,0 +1,144 @@
+/* pl_error.cpp */
+#include <string>
+#include <iostream>
+void pl_error(int num)
+{
+	std::string str;
+	switch (num) {
+		case  0:		str = " 	";
+		break;
+		case  1:		str = " stack is full! push failed !";
+		break;
+		case  2:		str = " stack is empty! pop failed !";
+		break;
+		case  3:		str = "The identifier must be followed by '=' !";
+		break;
+		case  4:		str = "After 'const', 'var' follows an identifier !";
+		break;
+		case  5:		str = " 	";
+		break;
+		case  6:		str = "Semicolon or comma missing !";
+		break;
+		case  7:		str = "Statement expected !";
+		break;
+		case  8:		str = "Symbol following the statements of the block not correct !";
+		break;
+		case  9:		str = "Period expected !";
+		break;
+		case 10:		str = "Incorrect use of a symbol within a statement !";
+		break;
+		case 11:		str = "Undeclared identifier !";
+		break;
+		case 12:		str = "Assignments to a constant name not allowed !";
+		break;
+		case 13:		str = "Assignment operator is '=' !";
+		break;
+		case 14:		str = "After 'call' a procedure identifier is expected !";
+		break;
+		case 15:		str = "Constant or variable identifier after call not allowed !";
+		break;
+		case 16:		str = "'then' expected !";
+		break;
+		case 17:		str = "'end' or ';' expected !";
+		break;
+		case 18:		str = "'do' expected !";
+		break;
+		case 19:		str = "Illegal symbol following a statement !";
+		break;
+		case 20:		str = "Comparison operator expected !";
+		break;
+		case 21:		str =  "this identifier within an expression not allowed !";
+		break;
+		case 22:		str = "Missing ')' !";
+		break;
+		case 23:		str = "This symbol cannot follow a factor !";
+		break;
+		case 24:		str = "An Expression may not start with this symbol !";
+		break;
+		/* added some from Ryans */
+		case 25:		str = "nesting levels too deep !";
+		break;
+	  case 26:
+	  case 27:
+	  case 28:
+		case 29:		str = " 	";
+		break;
+		case 30:		str = "number too large !";
+		break;
+		case 31:		str = "program too long !";
+		break;
+		case 32:		str = "procedure nesting too deep !";
+		break;
+		case 33:		str = "identifier expected !";
+		break;
+		case 34:		str = "semicolon missing !";
+		break;
+		case 35:		str = "'until' expected !";
+		break;
+		case 36:		str = "'of' expected !";
+		break;
+		case 37:		str = "Case table overflow !";
+		break;
+		case 38:		str = "':' expected !";
+		break;
+		case 39:		str = "Number expected !";
+		break;
+		case 40:		str = "Multiple definition of case label !";
+		break;
+		case 41:		str = "'end' expected !";
+		break;
+		case 42:		str = "String expected !";
+		break;
+		case 43:		str = "Missing '(' !";
+		break;
+		case 44:		str = "'to' or 'downto' expected !";
+		break;
+		case 45:		str = "Multiple declaration in block !";
+		break; 
+		case 46:		str = "Illegal symbol following a '[' !";
+		break;
+		case 47:		str = "']' expected !";
+		break;
+		case 48:		str = "'[' expected !";
+		break;
+		case 49:		str = "Symbol table full !";
+		break;
+		case 50:		str = "Array dimension <= 0 !";
+		break;
+		/* pl_micro_error */
+		case 51:			str = "'!' expected !";
+		break;
+		case 52:			str = "Alpha, number, '(' ')' expected !";
+		break;
+		case 53:			str = "')', '+', or ';' expected !";
+		break;
+		case 54:			str = "')', ';' expected !";
+		break;
+		case 55:			str = "Use '==' instead of '=' !";
+		break;
+		case 56:			str = "'=' needed following '!' ";
+		break;
+		case 57:			str = "condition op etc missing !";
+		break;
+		case 58:			str = "'{' expected !";
+			break;
+		case 59:			str = "'}' missing !";
+			break;
+		case 60:			str = "semicolon or right curly brace missing !";
+			break;
+		case 61:			str = "name already registered !";
+			break;
+		case 62:			str = "no such name in the table !";
+			break;
+		case 63:			str = "queue is empty !";
+			break;
+		case 64:			str = "too many chars, bigger size needed !";
+			break;
+		case 65:			str = "gstr is not in table or not in funtab !"; 
+			break;
+		case 66:			str = "'&' is not here !";
+			break;
+		default:		str = "error occured in pl_error function";
+    }
+	std::cout << "pl_error:	" << str << '\n';
+}
