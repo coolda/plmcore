@@ -1,4 +1,15 @@
 /* README */
+plm is a simple compiler using a core part of PL0 
+and implemented in c++.
+this plmcore has a basic part of plm for easy to look at.
+plm aims for expanding PL0, that we can use it. 
+syntax of plm looks more like c/c++.
+codings are very straight, fits to the one who wants to make 
+a compiler for the first time.
+expanded one is called plmmed which is medium sized plm.
+Look at it, Expand it, Modify it, As you like.
+plm is LEMA.
+
 plm license
 Copyright (c) 2012, coolda
 All rights reserved.

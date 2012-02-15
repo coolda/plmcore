@@ -1,0 +1,3 @@
+/* myary */
+myary[0]=100; myary[1]=3.45; myary[2]="hello";
+for(a=0; a<3; a=a+1) write(myary[a]);

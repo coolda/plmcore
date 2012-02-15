@@ -1,5 +1,5 @@
 // plm.cpp
-// plm_asis_min3
+// plmcore_asis_min3
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -14,72 +14,83 @@
 using namespace std;
 #define MAX_CODE_SIZE			1024	
 #define MAX_NAME_TABLE_SIZE	1024
+
 string str1;
 string gstr;
 char look;
 char peek;
 int strIndex;
+
 // mem base offset
 int immcnt=200;
 const int ary_base=300;
+
 // address
 int cx;				// code[]index counting
-// int adr_left	;	// used in statement OP_STO
 int adr;				// name table counting
 int left_adr;		// adr before increment
+
 // array
 bool aryFlag;
 bool aryindexFlag;
 bool aryintFlag;
 bool arystrFlag;
 bool aryfltFlag;
-int curr_ary_index;
-// command
-vector<string> cmdvec;
-int cmdvcnt;
-bool cmdFlag;
+vector<int> multi_kindvec;	// added feb15
+int multi_cnt;				// added 
+
 // for
 int fx1, fx2, fx3, fx4, fx5;	
+
 // ifz if zero no else or anything
 int iz1;
+
 // ife els combination
 int ifex1, ifex2, ifex3;
+
 // immediate str and flt
 int imminfo;
+
 // interp
 int reg1, reg2;		// reg1 is result reg2 is return adr
+
 // name table
 int origtyp;
+
 // procedure
 int px1;		// used in proc part patch
+
 // procedure call
 bool proc_callFlag;
 bool procFlag;
 int proc_calcnt;
-// procz_stmnt back patch
-int pzx1;
+
 // rhs
 bool rhsFlag;
+
 // string
 string strary[32];
 bool no_stoFlag;
+
 // string immediate
-bool no_stosFlag;
 bool lparenFlag;		// then const immediate str may be used
-// typeinfo
-// int typeinfo;		// INT CHA FLT STR
+
 // while patch
 int wx1, wx2;		// used in while
+
 // write info for operand1
 int wrtinfo;
+bool wrtmultiFlag; // added feb15
+
 // keyset_ini
 string key1, key2, key3, key4, key5;
 set<string> keyset;
+
 enum  { INT=1, CHA, FLT, STR, ARY, 
 		ARYTMP, ARYINT, ARYCHA, ARYFLT, ARYSTR, 
 		ARYINDEX, PRO, IMM, IMMCHA, IMMFLT, 
 		IMMSTR, LID, LIDINT, LIDFLT, LIDSTR, 
-	    LODCMD
+	    LODCMD, MULTI 
 };
 //Instruction types 
 enum {
@@ -388,7 +399,7 @@ void paren_expre() {
 	}
 }
 void factor() {
-	int n1, n2; 
+	int n1, n2, n3, n4; 
 	int n7, n8, n9;
 	int k1, k2, k3, k4 ;
 	float f1;
@@ -414,48 +425,68 @@ void factor() {
 		f1 = atof(s1.c_str());
 		n7 = atoi(s1.c_str());
 		if (pos != -1 ) { 
+			// set kind of left thing here
 			k3=get_tabkind(gstr);
 			// float situation 
-			if (k3==ARYTMP ) {
+			if (k3==ARYTMP || k3==ARYINT || k3==ARYSTR) {
 				set_tabkind(gstr, ARYFLT);
 				aryfltFlag=true;
+				multi_kindvec.push_back(ARYFLT);
 			}
 			else 
 				set_tabkind(gstr, FLT);
+			
 			gen(OP_IMM, IMMFLT, immcnt);
+			//	imminfo=ARYFLT;
 			table[immcnt++].flt=f1;
 			wrtinfo=IMMFLT;
 		}
 		else {
+			// "input immediate int case: n7: "
+			
 			if (aryindexFlag) {
-				gen(OP_LIT, ARYINDEX, n7);
+				// "aryindex setting: "  
+				// lets change this from ARYINDEX to ARYINT
+				gen(OP_LIT, ARYINT, n7);	// ARYINDEX==11
 				aryindexFlag=false;
-				wrtinfo=ARYINDEX;
-				curr_ary_index=n7;
+				//		curr_ary_index=n7;
+				if (gstr=="write") {
+					n3=multi_kindvec[n7];
+					wrtinfo=n3;
+				}
+				else 
+					wrtinfo=ARYINT;
 			}
+			
 			// call keyset.count(gstr) 
 			else if (keyset.count(gstr)==0){
+				// "gstr is not a keyword: "
 				n8=isin_tab(gstr);
 				k4=get_tabkind(gstr);
-				if (k4==ARYTMP) {
+				// in case of compound array
+				// has to be changed the kind to ARYINT
+				if (k4==ARYTMP || k4==ARYFLT || k4==ARYSTR) {
 					set_tabkind(gstr, ARYINT);
 					aryintFlag=true;
 					gen(OP_LIT, ARYINT, n7);
 					wrtinfo=ARYINT;
+					multi_kindvec.push_back(ARYINT);
 				}
 				else {
 					if (k4==0)
 						set_tabkind(gstr, INT);
+					
 					gen(OP_LIT, INT, n7);
 					wrtinfo=INT;
 				}
 			}
+			
 			else {
 				gen(OP_LIT, INT, n7);
 				wrtinfo=INT;
 				no_stoFlag=false;
 			}
-			cout << "lit: " << n7 << endl;
+	//		cout << "lit: " << n7 << endl;
 		}
 	}
 	else if (isAlpha(look)) {
@@ -470,24 +501,21 @@ void factor() {
 			k2=get_tabkind(gstr);
 			if (k2==0)
 				set_tabkind(gstr, k1);		// gstr==a
-			else if (aryFlag) {
-				if (k2 != ARYINT || k2 != ARYFLT || k2 != ARYSTR )
-					set_tabkind(gstr, k1);		// added this and see
-			}
 		}
 		if (isLSquare(look)) {
-			if (k1==ARYFLT)
+			if (k1==ARYINT)
+				aryintFlag=true;
+			else if (k1==ARYFLT)
 				aryfltFlag=true;
-			else 
+			else if(k1==ARYSTR) 
 				arystrFlag=true;
-					goto LSQ;
-		}
-		n1=isin_tab(s2);
+			goto LSQ;
+		}		n1=isin_tab(s2);
 		if (n1 != -1) {
 			gen( OP_LOD, k1, n1);
 			wrtinfo=k1;
-			if (isRSquare(look)) 
-				dolook();
+		//	if (isRSquare(look)) 
+		//		dolook();
 		}
 		else 
 			pl_error(62);
@@ -501,21 +529,35 @@ void factor() {
 		} while ( !isDquote(look) );
 		skipWhite();
 		dolook(); // get rid dquote
-		// put this s3 to temporary area of table[] which is above200
+		// put this s3 to temporary area of table[] which is above 200
 		table[immcnt].str=s3;
 		gen(OP_IMM, IMMSTR, immcnt++);
 		wrtinfo=IMMSTR;
+		
 		// check gstr kind call keyset.count(gstr) 
 		if (keyset.count(gstr)==0){
+			// "gstr is not a keyword: "
 			n2 = isin_tab(gstr);
+			// set kind of gstr,  msg in this case
 			// check the curr state of kind gstr
 			n9= get_tabkind(gstr);
-			if (n9 == ARYTMP) {
+			// if aryindexFlag is on then case is mys[0]="hello";
+			// use aryFlag which is available up to gen LID
+			if (n9==ARYSTR) { // 10
+				// "kind is already set to ARYSTR: "
+				arystrFlag=true;
+				wrtinfo=ARYSTR;
+				multi_kindvec.push_back(ARYSTR);
+			}
+			else if (n9==ARYTMP || n9==ARYINT || n9==ARYFLT) {
+				// "set_tabkind to ARYSTR:
 				set_tabkind(gstr, ARYSTR );
 				arystrFlag=true;
 				wrtinfo=ARYSTR;		// try this and see
+				multi_kindvec.push_back(ARYSTR);
 			}
 			else { 
+				// "set_tabkind to STR: " 
 				set_tabkind(gstr, STR );
 				wrtinfo=STR ;
 			}
@@ -549,58 +591,86 @@ void factor() {
 		gen(OP_IMM, IMMCHA, immcnt++);
 		wrtinfo=IMMCHA ;
 	}
-	else if ( isLSquare(look) ) {
+	else if (isLSquare(look)) {
 		// a[0]=10; in this case, still left hand side
 		int n5;
 		aryFlag=true;
 		// set kind thing
+		// put newly created ARYTMP here
 		if (get_tabkind(gstr)==0)
 			set_tabkind(gstr, ARYTMP);
 		n5=isin_tab(gstr);
-	LSQ:
-		gen(OP_LDA, ARYTMP, ary_base);	// start at [200]
+		
+	LSQ:		
+		
+		gen(OP_LDA, ARYTMP, ary_base);	// start at [300]
 		wrtinfo=ARYTMP;
+		
 		if (isLSquare(look)) {
-			// next will be array index int num
+			// next will be array index int num or alpha identifier
 			aryindexFlag=true;
 			dolook();
 			expression();
 			dolook();
 			gen(OP_OPR, 0, OPR_ADD);
 		}
+		
 		if (isAssign(look)) {
 			dolook();
 			expression();
-			if (aryintFlag)
-				gen(OP_OPR, ARYINT, OPR_SID);
-			else if (arystrFlag)
-				gen(OP_OPR, ARYSTR, OPR_SID);
-			else if (aryfltFlag) 
-				gen(OP_OPR, ARYFLT, OPR_SID);
-			no_stoFlag=true;
-		}
-		else {
+			
 			if (aryintFlag) {
-				gen(OP_OPR, ARYINT, OPR_LID);
+				gen(OP_OPR, ARYINT, OPR_SID);
+				aryintFlag=false;
 				wrtinfo=ARYINT;
-			}
-			else if (aryfltFlag) {
-				gen(OP_OPR, ARYFLT, OPR_LID);
-				wrtinfo=ARYFLT;
+				no_stoFlag=true;
 			}
 			else if (arystrFlag) {
-				gen(OP_OPR, ARYSTR, OPR_LID);
+				gen(OP_OPR, ARYSTR, OPR_SID);
+				arystrFlag=false;
 				wrtinfo=ARYSTR;
+				no_stoFlag=true;
 			}
-			aryFlag=false;
-			aryintFlag=false;
-			arystrFlag=false;
-			aryfltFlag=false;
+			
+			else if (aryfltFlag) { 
+				gen(OP_OPR, ARYFLT, OPR_SID);
+				aryfltFlag=false;
+				wrtinfo=ARYFLT;
+				no_stoFlag=true;
+			}
+		}
+		else {
+			n4=multi_kindvec.size();
+			if(n4>0 && gstr=="write") { 
+				gen(OP_OPR, MULTI, OPR_LID);
+				wrtinfo=MULTI;
+			}
+			else if (aryintFlag) { 
+				gen(OP_OPR, ARYINT, OPR_LID);
+				aryintFlag=false;
+				wrtinfo=ARYINT;
+				no_stoFlag=true;
+			}
+			
+			else if (aryfltFlag) {
+				gen(OP_OPR, ARYFLT, OPR_LID);
+				aryfltFlag=false;
+				wrtinfo=ARYFLT;
+				no_stoFlag=true;
+			}
+			
+			else if (arystrFlag) {
+				gen(OP_OPR, ARYSTR, OPR_LID);
+				arystrFlag=false;
+				wrtinfo=ARYSTR;
+				no_stoFlag=true;
+			}
 		}
 	}
 	else
 		pl_error(52);
 }
+
 void term() {
 	factor();
 	while ( isMul(look) ) {
@@ -875,6 +945,9 @@ void interp()
 	float fad1, fad2;
  	float fnum1, fnum2;
 	bool retFlag=false;
+	int multi_size=multi_kindvec.size();
+	int mcnt=0;
+	
 	do {
 		/* code[i].id holds a number representing opcode kind */
 		opcode1 = code[pc].opcode;
@@ -1280,7 +1353,19 @@ void interp()
 				num2=int(fnum2);
 		//		cout << "operand1 wrt: " << operand1 << endl;
 		//		cout << "stack popped wrt: " << fnum2 << endl;
-				if (operand1==IMMSTR) 
+				if (operand1==MULTI) {
+					if (mcnt<multi_size)
+						num1=multi_kindvec[mcnt++];
+					if (num1==ARYINT)
+						cout << "wrt aryint: " << table[num2].ints << endl;
+					else if (num1==ARYFLT)
+						cout << "wrt aryflt: " << table[num2].flt << endl;
+					else if (num1==ARYSTR)
+						cout << "wrt arystr: " << table[num2].str << endl;
+					else 
+						cout << "wrong thing happened: fix it!!!" << endl;
+				}
+				else if (operand1==IMMSTR) 
 					cout << "wrt immstr: " << table[num2].str << endl;
 				else if (operand1==IMMFLT) 
 					cout << "wrt immflt: " << table[num2].flt << endl;
@@ -1302,18 +1387,6 @@ void interp()
 					cout << "wrt flt: " << fnum2 << endl;
 				else if (operand1==STR )
 					cout << "wrt str: " << table[num2].str << endl;
-				/*
-				else if ( operand1==LID ) {
-					if (typeinfo==INT)
-						cout << "wrt lidint: " << table[num2].ints << endl;
-					else if (typeinfo==FLT)
-						cout << "wrt lidflt: " << table[num2].flt << endl;
-					else if (typeinfo==STR)
-						cout << "wrt lidstr: " << table[num2].str << endl;
-					else 
-						cout << " error! no typeinfo available: in lid " << endl;
-				}
-				 */
 				else 
 					cout << "wrt fnum2: " << fnum2 << endl;
 				ok = stack.push(fnum2);  // push it back 
