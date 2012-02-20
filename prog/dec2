@@ -1,0 +1,3 @@
+/* dec2 */
+a=0; b=100; c=0;
+a = 3 * b--; write(a); write(b);

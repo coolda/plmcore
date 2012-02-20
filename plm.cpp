@@ -41,7 +41,7 @@ int multi_cnt;				// added
 
 // for
 int fx1, fx2, fx3, fx4, fx5;	
-
+bool forFlag;
 // ifz if zero no else or anything
 int iz1;
 
@@ -50,6 +50,13 @@ int ifex1, ifex2, ifex3;
 
 // immediate str and flt
 int imminfo;
+
+// inc dec
+int incAdr;
+int decAdr;
+bool incFlag;
+bool decFlag;
+bool factopFlag;
 
 // interp
 int reg1, reg2;		// reg1 is result reg2 is return adr
@@ -121,6 +128,9 @@ const char *opr_name[] = {
 // foward declarations
 void expression();
 void statement();
+void inc_stmnt();
+void dec_stmnt();
+
 map<string, int> pdispmap;
 bool set_pdispmap(string& str, int num) {
 	pdispmap[str] = num;
@@ -401,6 +411,7 @@ void paren_expre() {
 void factor() {
 	int n1, n2, n3, n4; 
 	int n7, n8, n9;
+	int n14, n15;
 	int k1, k2, k3, k4 ;
 	float f1;
 	string s2, s3;
@@ -413,6 +424,37 @@ void factor() {
 		rhsFlag=true;
 		dolook();
 	}
+	if (isPlus(look)) {
+		char c=dopeek();
+		if (isPlus(c)) {
+			// "inc found: "
+			n14=isin_tab(gstr);
+			dolook();	// '+'
+			dolook();	// '+'
+			if (n14 != -1) {
+				incAdr = n14;
+				factopFlag=true;
+				inc_stmnt();
+				goto TAIL;
+			}
+		}
+	}
+	if (isMinus(look)) {
+		char c=dopeek();
+		if (isMinus(c)) {
+			// "dec found: " 
+			n15=isin_tab(gstr);
+			dolook();	// '-'
+			dolook();	// '-'
+			if (n15 != -1) {
+				decAdr = n15;
+				factopFlag=true;
+				dec_stmnt();
+				goto TAIL;
+			}
+		}
+	}
+	
 	if (isLParen(look))
 		paren_expre();
 	if ( isNum(look) ) {
@@ -502,6 +544,30 @@ void factor() {
 			if (k2==0)
 				set_tabkind(gstr, k1);		// gstr==a
 		}
+		n1=isin_tab(s2);
+		
+		if (isPlus(look)) {
+			char c = dopeek();
+			if (isPlus(c)) {
+				// inc thing
+				dolook();	// '+'
+				dolook();	// '+'
+				incFlag=true;
+				incAdr = n1;
+			}
+		}
+		
+		if (isMinus(look)) {
+			char c = dopeek();
+			if (isMinus(c)) {
+				// "dec situation: "
+				dolook();		// '-'
+				dolook();		// '-'
+				decFlag=true;
+				decAdr = n1;
+			}
+		}
+		
 		if (isLSquare(look)) {
 			if (k1==ARYINT)
 				aryintFlag=true;
@@ -510,7 +576,7 @@ void factor() {
 			else if(k1==ARYSTR) 
 				arystrFlag=true;
 			goto LSQ;
-		}		n1=isin_tab(s2);
+		}
 		if (n1 != -1) {
 			gen( OP_LOD, k1, n1);
 			wrtinfo=k1;
@@ -669,6 +735,8 @@ void factor() {
 	}
 	else
 		pl_error(52);
+TAIL:
+	cout << "";
 }
 
 void term() {
@@ -762,14 +830,16 @@ void forstmnt() {
 	else
 		pl_error(43);
 	statement();		//  i to table, lit 0 sto 0
-	dolook();			// ';'
+	if (isSemicolon(look))
+		dolook();			// ';'
 	fx1 = cx;			// keep the position of cx for backpatch 
 	condition();		// lod 0 lit 3  op_opr lss
+	if (isSemicolon(look))
+		dolook();			// ';'
 	fx2=cx;
 	gen(OP_JPC, 0, 0);	// goto end if fails fall thru if true 
 	fx3=cx;
 	gen(OP_JMP, 0, 0);	// goto stmnt3 which is write(i)
-	dolook();			// ';'
 	fx4=cx;
 	statement();		// stmnt2 a=a+1
 	gen(OP_JMP, 0, fx1);	// goto cmp portion
@@ -788,7 +858,7 @@ void forstmnt() {
 	}	
 	else
 		statement();
-	dolook();
+	// dolook(); // ';'
 	// after do something in stmnt then increment a by 1
 	// jump to that place which is cx4
 	gen(OP_JMP, 0, fx4);
@@ -872,9 +942,40 @@ void proc_callstmnt() {
 	 	gen(OP_CAL, 0, n2+1);
 	no_stoFlag=true;	
 }
+void inc_stmnt() {
+	gen(OP_LOD, INT, incAdr);
+	gen(OP_OPR, INT, OPR_INC);
+	if (!factopFlag)
+		gen(OP_STO, INT, incAdr);
+	wrtinfo=INT;
+ 	incFlag=false;
+	factopFlag=false;
+}
+void dec_stmnt() {
+	gen(OP_LOD, INT, decAdr);
+	gen(OP_OPR, INT, OPR_DEC);
+	if (!factopFlag)
+		gen(OP_STO, INT, decAdr);
+	wrtinfo=INT;
+	decFlag=false;
+	factopFlag=false;
+}
+
 void statement() {
 	int n2, n3;
 	int address;
+	if (incFlag) {
+	//	cout << "incFlag is On: " << endl;
+		inc_stmnt();
+		goto BOTTOM;
+	}
+	if (decFlag) {
+	//	cout << "decFlag is On: " << endl;
+		dec_stmnt();
+		goto BOTTOM;
+	}
+	
+	
 	gstr.clear();
 	if (isAlpha(look)) {
 		do {
@@ -888,8 +989,11 @@ void statement() {
 		proc_callstmnt();
 		goto BYPASS;
  	}
-	else if ( gstr == "for" )
+	else if ( gstr == "for" ) {
+		forFlag=true;
 		forstmnt();
+		forFlag=false;
+	}
 	else if (gstr == "ife")
 		ife_stmnt();
 	else if (gstr == "ifz")
@@ -913,8 +1017,8 @@ void statement() {
 			address	= n3;
 		expression();
 		
-		if ( look != ';')
-			pl_error(34);		// you get an error for(... i=i+1)
+		if ( look != ';' && forFlag==false)
+			pl_error(34);
 BYPASS:	
 		if (no_stoFlag)
 			no_stoFlag=false;
@@ -927,6 +1031,8 @@ BYPASS:
 			else 
 				pl_error(65);
 		}
+BOTTOM:
+	cout << "";
 	}
 }
 
